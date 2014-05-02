@@ -1,4 +1,4 @@
 fuzzy-ponies
 ============
 
-Pony Roguelike repisitory
+Pony Roguelike repository
