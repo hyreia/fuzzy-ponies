@@ -19,3 +19,14 @@
 *.exe
 *.out
 *.app
+*.tlog
+*.log
+*.manifest
+*.cache
+*.res
+*.lastbuildstate
+*.rc
+*.idb
+*.pdb
+*.filters
+*.user
