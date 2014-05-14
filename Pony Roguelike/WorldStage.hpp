@@ -13,6 +13,21 @@ public:
 	~WorldStage();
 	//Load data from file
 	//Save data to file
+	void Start();
+	void Shutdown();
+
+	void SetCurrentMap(RegionalMap *regionalMap);
+	RegionalMap *currentMap;
+	std::list<RegionalMap*> regionsInRange;
+
+	ActorList actorList;
+	std::vector<Material> materials;
+protected:
+	void CreateMaterials();
+
+	void LoadMapFromFileOrCreateNewMap();
+	//Write now we're just storing tiles and actor Ids as bytes, no compression
+	void SaveMapToFile(RegionalMap *map);
 
 };
 

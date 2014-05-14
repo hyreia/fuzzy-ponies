@@ -48,7 +48,7 @@ bool ActorList::LoadActorsFromFile()
 					//deserialize a component of that type with the tokenized string
 					//add it to the actor being assembled
 			}
-			else if(buffer[0] == '#' || buffer[0] == ';'){	printf("%s\n", str.c_str()); }
+			else if(buffer[0] == '#' || buffer[0] == ';'){}
 			else //it must be for an actor
 			{
 				//add any pending actor being assembled to the map, clear pending space
@@ -62,16 +62,13 @@ bool ActorList::LoadActorsFromFile()
 				if(parseOutId.size() > 1)
 				{
 					actorId = atoi(parseOutId[0].c_str());
-					printf("%d\n", actorId);
 					auto tokenized = split(parseOutId[1], ActorComponent::DELIM);
-
+					pendingActor = new Actor(0, 0, 0, Color::Black, 0);
+					pendingActor->Deserialize(tokenized);
 				}
-				//if we could parse out an id, keep going
-					//tokenize the rest by the component delimiter
-					//deserialize an Actor with the tokenized string
-				//Syntax is wrong, either malformed or not actor line, move along
+				//else syntax is wrong, either malformed or not actor line, move along
+				
 			}
-
 		}
 	//Once the file has been fully read, close it
 	al_fclose(file);
@@ -84,13 +81,92 @@ bool ActorList::LoadActorsFromFile()
 	if(pendingActor)
 	{
 		InsertActor(actorId, pendingActor);
+		pendingActor = NULL;
 	}
 
 	return true;
 }
 
+void ActorList::CreateSomeActorsRandomly(RegionalMap *map, int mapWidth, int mapHeight)
+{
+
+	auto player = new Actor(5, 5, '@', Color::Red, MARKER_PONY_IMAGE);
+	InsertActor(1, player);
+
+	int numOfGriffins = rng::RandInRange(10, 20);
+	int x = 0;
+	int y = 0;
+	bool isClear = true;
+	for(int griffin = 0; griffin < numOfGriffins; griffin++)
+	{
+		int spawnAttempts = 0;
+		isClear = true;
+		do
+		{
+			
+			spawnAttempts++;
+			if(spawnAttempts > 10) break;
+			x = rng::Rand(mapWidth);
+			y = rng::Rand(mapHeight);
+			auto actorsList = GetActors();
+			
+			//oh god, this line is unsafe
+			//isClear = !game->world.materials[map->tile[x][y].materialTypeIndex].isBlocking;
+
+			while(!actorsList.empty() && isClear)
+			{
+
+				if(actorsList.top()->x == x &&
+					actorsList.top()->y == y && actorsList.top()->isBlocking)
+				{
+					isClear = false;
+				}
+				actorsList.pop();
+			}
+			
+		} while(!isClear);
+
+		//G for griffin!
+		if(isClear)
+		{
+			auto newActor = new Actor(x, y, 'G', Color::Orange, GRIFFIN_IMAGE);
+			InsertActor(griffin+2, newActor);
+		}
+	}
+
+}
+
+#pragma warning(push)
+#pragma warning(disable: 4996) //vsprintf is unsafe and depricated but vsprintf_s is nonstandard
 void ActorList::SaveActorsToFile()
-{}
+{
+	//Open actors file in text mode
+	ALLEGRO_FILE *file = al_fopen("actors.act", "w");
+
+	//Iterate through each actor
+	for(auto actor = actors.begin(); actor != actors.end(); actor++)
+	{
+		char id_buffer[13];
+		sprintf(id_buffer, "%d", (*actor).first);
+		//Get serialize string for Actor class
+		std::string actorLine = (*actor).second->Serialize();
+		//Insert the actor ID and actorId separator
+		actorLine.insert(0, "|");
+		actorLine.insert(0, id_buffer);
+		actorLine.append("\n");
+		//Write it to the file
+		al_fwrite(file, actorLine.c_str(), strlen(actorLine.c_str()));
+
+		//Then serialize each component of theirs
+		
+			//Writing each of those components to the file as well, beginning with a tab.
+	}
+	
+	al_fclose(file);
+
+}
+#pragma warning(pop)
+
 
 Actor *ActorList::GetActor(int id)
 {
@@ -126,4 +202,17 @@ void ActorList::InsertActor(int id, Actor *actor)
 	if(actors.count(id)==1) delete actors[id];
 
 	actors.insert(std::pair<int, Actor*>(id, actor));
+}
+
+std::priority_queue<Actor*, std::vector<Actor*>, ActorComparator> ActorList::GetActors()
+{
+	std::priority_queue<Actor*, std::vector<Actor*>, ActorComparator> ret;
+
+	for(auto a = actors.begin(); a != actors.end(); a++)
+	{
+		ret.push( (*a).second );
+
+	}
+
+	return ret;
 }

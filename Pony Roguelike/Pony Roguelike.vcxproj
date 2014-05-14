@@ -91,9 +91,11 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="ImageAssets.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Map.cpp" />
+    <ClCompile Include="RegionalMap.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Random.cpp" />
+    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="WorldStage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="game.hpp" />
@@ -110,7 +112,7 @@
     <ClInclude Include="ImageAssets.hpp" />
     <ClInclude Include="KeyEvent.hpp" />
     <ClInclude Include="main.hpp" />
-    <ClInclude Include="Map.hpp" />
+    <ClInclude Include="RegionalMap.hpp" />
     <ClInclude Include="MapTile.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="Message.hpp" />

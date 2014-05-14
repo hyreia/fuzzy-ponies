@@ -5,7 +5,7 @@ class Renderer
 {
 public:
 	Renderer();
-	virtual void RenderWorld(WorldStage *world, int focusX, int focusY, Map *currentMap) = 0;
+	virtual void RenderWorld(WorldStage *world, int focusX, int focusY) = 0;
 	virtual ~Renderer(){}
 private:
 
@@ -17,6 +17,7 @@ private:
 class TileRenderer: public Renderer
 {
 public:
-	TileRenderer(ImageAssets *assets, 
+	TileRenderer();
+	virtual void RenderWorld(WorldStage *world, int focusX, int focusY);
 
 };

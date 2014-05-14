@@ -13,7 +13,7 @@ static const int TILE_HEIGHT = 32;
 
 Game::Game():
 isWindowClosed(false), windowWidth(CON_WIDTH*TILE_WIDTH), windowHeight(CON_HEIGHT*TILE_HEIGHT),
-isDrawingActors(true), isDrawingItems(true), printAlignment(ALLEGRO_ALIGN_LEFT)
+isDrawingActors(true), isDrawingItems(true), printAlignment(ALLEGRO_ALIGN_LEFT), renderer(NULL)
 {}
 
 Game::~Game(){}
@@ -28,14 +28,9 @@ void Game::Init()
 	Console::SetGlobalConsoleTileSize(TILE_WIDTH, TILE_HEIGHT, font);
 
 	imageAssets.LoadImagesFromFile();
-	actorList.LoadActorsFromFile();
 
-	materials.push_back(Material("grass", "a patch of grass", '.', ',', ',', '.', 
-		Color::Black, Color::DarkGreen, false, GRASS_TILE_IMAGE, 0));
-
-	materials.push_back(Material("stone wall", "a rough stone wall", '#', '#', '#', '#',
-		Color::DarkGrey, Color::Grey, true, STONE_TILE_IMAGE, 0));
-
+	world.Start();
+	renderer = new TileRenderer();
 }
 
 KeyEvent Game::GetLastKey()
@@ -49,40 +44,20 @@ KeyEvent Game::GetLastKey()
 
 void Game::Run()
 {
+	Message startMessage(Color::Yellow,"Move around with the arrow keys or numpad!");
+	messageQueue.push_back( startMessage );
 
-	//Putting map here for now
-	Map map;
-	map.InitToField(CON_WIDTH*2, CON_HEIGHT*2, 0);
+	//Actor *playerActor = new Actor(20, 15, '@', Color::Pink, MARKER_PONY_IMAGE);
+	//printf("%s\n", playerActor->Serialize().c_str());
 	
-	const int ARBITRARY_NUMBER_OF_WALLS = 20;
-	for(int nWalls = 0; nWalls < ARBITRARY_NUMBER_OF_WALLS; nWalls++)
-	{
-		//Manually place down some walls to run into
-		int x = rng::Rand(CON_WIDTH*2);
-		int y = rng::Rand(CON_HEIGHT*2);
-		map.tile[x][y].materialTypeIndex = 1;
-	}
-
-	//Don't spawn MarkerPony inside a wall
-	if(map.tile[20][15].materialTypeIndex == 1)
-	{
-		map.tile[20][15].materialTypeIndex = 0;
-	}
-	currentMap = &map;
-
-	
-	//Ad hoc message queue
-	//std::list<Message> messageQueue;
-	bool isTimeToRender=true;
-	std::string startMessage = "Move around with the arrow keys or numpad!";
-	
-	//messageQueue.push_back( startMessage );
-	playerActor = new Actor(20, 15, '@', Color::Pink, MARKER_PONY_IMAGE);
+	/*
 	map.actors.push_back(playerActor);
 	
 	//root->DrawMap(map, 0, 0, 0, 0);
-
+	*/
 	//Run the logic here for now
+
+	bool isTimeToRender=true;
 	while(!IsWindowClosed())
 	{
 		//OUTPUT
@@ -122,6 +97,7 @@ void Game::Run()
 			case ALLEGRO_KEY_PAD_3: dx++; dy++; break;
 			case ALLEGRO_KEY_B:
 				{
+					auto playerActor = world.actorList.GetActor(1);
 					messageQueue.push_back( Message(Color::Yellow, "BOOP @ %d %d!", playerActor->x, playerActor->y) );
 					isTimeToRender = true;
 					break;
@@ -141,18 +117,41 @@ void Game::Run()
 		if(dx != 0 || dy != 0)
 		{
 			//In range
-			if(playerActor->x+dx < (int)map.tile.size() && playerActor->y+dy < (int)map.tile[0].size() &&
+			auto playerActor = world.actorList.GetActor(1);
+			if(playerActor->x+dx < (int)world.currentMap->tile.size() && playerActor->y+dy < (int)world.currentMap->tile[0].size() &&
 				playerActor->x+dx >= 0 && playerActor->y+dy >= 0)
 			{
-				int materialIndex = map.tile[playerActor->x+dx][playerActor->y+dy].materialTypeIndex;
-				int materialVariant = map.tile[playerActor->x+dx][playerActor->y+dy].variant;
-				if(!materials[materialIndex].isBlocking)
+				int materialIndex = world.currentMap->tile[playerActor->x+dx][playerActor->y+dy].materialTypeIndex;
+				int materialVariant = world.currentMap->tile[playerActor->x+dx][playerActor->y+dy].variant;
+				if(!world.materials[materialIndex].isBlocking)
 				{
-					playerActor->x += dx;
-					playerActor->y += dy;
-					//Message hereis(Color::White, "You see %s here.", materials[materialIndex].description.c_str());
-					//messageQueue.push_back(hereis);
-					isTimeToRender=true;
+					//Check that there's no actor in that position
+					bool isOccupied = false;
+					auto actors = world.actorList.GetActors();
+					while(!actors.empty())
+					{
+						if(actors.top()->x == playerActor->x+dx &&
+							actors.top()->y == playerActor->y+dy)
+						{
+							if(actors.top()->isBlocking)
+							{
+								isOccupied = true;
+								break;
+							}
+						}
+						actors.pop();
+					}
+					if(!isOccupied)
+					{
+						//move there
+						playerActor->x += dx;
+						playerActor->y += dy;
+					}
+					else
+					{
+						//interact with them
+					}
+					
 				}
 				else
 				{
@@ -165,6 +164,9 @@ void Game::Run()
 
 					
 				}
+				//Message hereis(Color::White, "You see %s here.", world.materials[materialIndex].description.c_str());
+				//messageQueue.push_back(hereis);
+				//isTimeToRender=true;
 			}
 			isTimeToRender = true;
 		}
@@ -174,6 +176,7 @@ void Game::Run()
 
 	
 	imageAssets.FreeImages();
+	world.Shutdown();
 	ShutdownAllegro();
 	
 }
@@ -181,9 +184,24 @@ void Game::Run()
 void Game::Flush()
 {
 	al_clear_to_color(al_map_rgb(0, 0, 0));
+	
+	if(renderer)
+	{
+		auto playerActor = world.actorList.GetActor(1);
+		auto currentMap = world.currentMap;
 
+		int drawX = playerActor->x - CON_WIDTH/2;
+		int drawY = playerActor->y - CON_HEIGHT/2;
+
+		if(drawX < 0) drawX=0;
+		if(drawY < 0) drawY=0;
+		if(drawX+CON_WIDTH  >  (int)currentMap->tile.size()) drawX = (int)currentMap->tile.size()-CON_WIDTH;
+		if(drawY+CON_HEIGHT >  (int)currentMap->tile[0].size()) drawY = (int)currentMap->tile[0].size()-CON_HEIGHT;
+
+		renderer->RenderWorld(&world, drawX, drawY);
+	}
 	//Draw a map if there's a map
-
+/*
 	int drawX = playerActor->x - CON_WIDTH/2;
 	int drawY = playerActor->y - CON_HEIGHT/2;
 
@@ -202,7 +220,7 @@ void Game::Flush()
 
 	//Else there's not a menu, draw the GUI
 		//Which consists of immediate stats and message queue
-
+*/
 		DrawMessageQueue();
 
 	al_flip_display();
@@ -320,7 +338,7 @@ void Game::DrawCurrentMap(int xOffset, int yOffset) const
 	int tileSize = game->GetTileSize();
 	int width = game->GetWindowWidth() / tileSize;
 	int height = game->GetWindowHeight() / tileSize;
-
+/*
 	for(int x = 0; x < width && xOffset+x < (int)currentMap->tile.size(); x++)
 	{
 		for(int y = 0; y < height && yOffset+y < (int)currentMap->tile[0].size(); y++)
@@ -334,12 +352,12 @@ void Game::DrawCurrentMap(int xOffset, int yOffset) const
 					tint[currentMap->tile[xOffset+x][yOffset+y].variant ], x*tileSize, y*tileSize, 0);
 			}
 		}
-	}
+	}*/
 }
 
 void Game::DrawCurrentMapActors(int xOffset, int yOffset) const
 {
-	for(auto actor = currentMap->actors.begin(); actor != currentMap->actors.end(); actor++)
+/*	for(auto actor = currentMap->actors.begin(); actor != currentMap->actors.end(); actor++)
 	{
 		auto texture = imageAssets.GetActorImage((*actor)->image);
 		if(texture)
@@ -353,7 +371,7 @@ void Game::DrawCurrentMapActors(int xOffset, int yOffset) const
 			al_draw_textf(tileFont, (*actor)->color, TILE_WIDTH*(*actor)->x-xOffset, TILE_HEIGHT*(*actor)->y-yOffset, 0, "%c", 
 				(*actor)->ascii);
 		}
-	}
+	}*/
 }
 
 void Game::DrawMessageQueue()
