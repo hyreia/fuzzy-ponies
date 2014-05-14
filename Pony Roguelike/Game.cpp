@@ -23,7 +23,7 @@ void Game::Init()
 	rng::Seed();
 
 	InitAllegro();
-	SetWindowTitle("Pony Roguelike Development: The @ Demo 2: Electric Scootaloo: Long Title Edition");	
+	SetWindowTitle("Pony Roguelike Development: Marker Visits The Griffin Kingdom Edition");	
 
 	Console::SetGlobalConsoleTileSize(TILE_WIDTH, TILE_HEIGHT, font);
 
