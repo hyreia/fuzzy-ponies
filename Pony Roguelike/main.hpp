@@ -10,9 +10,11 @@
 #include <string>
 #include <vector>
 #include <map>
+
 #include <queue>
 #include <stdio.h>
 
+#include "Random.hpp"
 #include "Bitmap.hpp"
 #include "ImageAssets.hpp"
 #include "Color.hpp"
@@ -20,20 +22,25 @@
 #include "Ai.hpp"
 #include "Message.hpp"
 
-#include "ActorList.hpp"
 
 
-
-#include "Random.hpp"
-#include "ConsoleTile.hpp"
-#include "MouseState.hpp"
-
-
-#include "Console.hpp"
-#include "KeyEvent.hpp"
 #include "Material.hpp"
 #include "MapTile.hpp"
-#include "Map.hpp"
+#include "RegionalMap.hpp"
+
+#include "ActorList.hpp"
+
+#include "WorldStage.hpp"
+#include "Renderer.hpp"
+
+
+
+#include "MouseState.hpp"
+
+#include "ConsoleTile.hpp"
+#include "Console.hpp"
+#include "KeyEvent.hpp"
+
 
 #include "Game.hpp"
 

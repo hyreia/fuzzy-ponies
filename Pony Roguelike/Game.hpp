@@ -16,7 +16,7 @@ public:
 
 	KeyEvent GetLastKey();
 
-	std::vector<Material> materials;
+	
 
 	//No get, if you need to ask you should just do it
 	void SetPrintAlignment(int alignment);
@@ -32,21 +32,14 @@ public:
 	int GetTileSize();
 
 	ImageAssets imageAssets;
-	ActorList actorList;
+	WorldStage world;
 
-	template<typename T>
-	struct PtrLess
-	{
-		bool operator()(const T* left, const T* right)
-		{
-			return *left < *right;
-		}
-	};
-	std::priority_queue<Actor*, std::vector<Actor*>, PtrLess<Actor> > actors;
 private:
 	int windowWidth, windowHeight;
-	Actor *playerActor; 
-	Map *currentMap;
+	//Actor *playerActor; 
+	//Map *currentMap;
+
+	Renderer *renderer;
 	
 	void SetWindowTitle(const char *title);
 	inline void DrawCurrentMap(int xOffset, int yOffset) const;

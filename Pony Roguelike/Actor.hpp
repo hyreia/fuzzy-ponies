@@ -51,7 +51,7 @@ public:
 		SERIALIZATION_MINIMUM_SIZE=SERIAL_NAME,
 	};
 
-	void Deserialize(std::vector<std::string> tokens);
+	bool Deserialize(std::vector<std::string> tokens);
 	std::string Serialize();
 
 	Actor(int x, int y, int ch, Color color, int image, int delay=900, bool isBlocking=true, bool isDrawn=true);
@@ -59,6 +59,15 @@ public:
 
 	//Components available
 	Ai *ai;
+};
+
+class ActorComparator
+{
+public:
+    bool operator()(const Actor* left, const Actor* right)
+    {
+        return (*left) < (*right);
+    }
 };
 
 #endif

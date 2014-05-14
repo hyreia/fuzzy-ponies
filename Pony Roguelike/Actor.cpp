@@ -20,17 +20,14 @@ Actor::~Actor()
 	if(ai) delete ai;
 }
 
-bool operator< (const Actor& one, const Actor& two)
+bool operator< (const Actor& lhs, const Actor& rhs)
 {
-	if(!one.isBlocking && two.isBlocking) return true;
-	else if(one.isBlocking && !two.isBlocking) return false;
+	if(!rhs.isDrawn) return false;
+	if(!rhs.isBlocking) return false;
 
+	if(lhs.image < rhs.image) return true;
 
-
-
-
-	//If all else fails
-	return true;
+	return false;
 }
 
 void Actor::ResetDelay()
@@ -43,14 +40,15 @@ void Actor::ResetDelay()
 }
 
 /* X, Y, Ascii, Image, ColorR, ColorG, ColorB, Template, Delay, isDrawn, isBlocking, (Name)*/
-void Actor::Deserialize(std::vector<std::string> tokens)
+bool Actor::Deserialize(std::vector<std::string> tokens)
 {
-	if(tokens.size() < SERIALIZATION_MINIMUM_SIZE) return;
-	if(tokens[SERIAL_ASCII] != "Actor") return;
+	if(tokens.size() < SERIALIZATION_MINIMUM_SIZE) return false;
+	if(tokens[SERIAL_ACTOR] != "Actor") return false;
 	
 	x = atoi(tokens		[SERIAL_X].c_str()); 
 	y = atoi(tokens		[SERIAL_Y].c_str());
-	ascii = atoi(tokens [SERIAL_ASCII].c_str()); 
+
+	ascii = tokens[SERIAL_ASCII].c_str()[0]; 
 	image = atoi(tokens [SERIAL_IMAGE].c_str());
 	color = Color( (unsigned char)atoi(tokens[SERIAL_COLOR_R].c_str()),
 				   (unsigned char)atoi(tokens[SERIAL_COLOR_G].c_str()),
@@ -65,28 +63,31 @@ void Actor::Deserialize(std::vector<std::string> tokens)
 		name = tokens[SERIAL_NAME];
 	}
 
+	return true;
 }
 
 std::string Actor::Serialize()
 {
 	const char DELIM = ':';
-	const char ActorWord[] = "ActorWord";
-
+	const char ActorWord[] = "Actor";
 	std::ostringstream ss;
 	ss << ActorWord << DELIM 
 	   << x << DELIM
 	   << y << DELIM
-	   << ascii << DELIM
+	   << (char)ascii << DELIM
 	   << image << DELIM
-	   << color.r << DELIM
-	   << color.g << DELIM
-	   << color.b << DELIM
-	   << color.a << DELIM
+	   << (int)color.r << DELIM
+	   << (int)color.g << DELIM
+	   << (int)color.b << DELIM
+	   << (int)color.a << DELIM
 	   << ActorTemplateIdUsedOnCreation << DELIM
 	   << turnDelay << DELIM
 	   << isDrawn << DELIM
-	   << isBlocking << DELIM;
-	if(!name.empty()) ss << name;
+	   << isBlocking;
+	if(!name.empty())
+	{
+		ss << DELIM << name;
+	}
 
 	return ss.str();
 }
